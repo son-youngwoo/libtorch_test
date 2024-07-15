@@ -24,24 +24,27 @@ int main(int argc, char** argv) {
 
   module.to(torch::kCUDA); // module -> GPU
 
-  torch::Tensor input_tensor = torch::rand({518, 1, 100, 100}).to(torch::kCUDA);  // {batch_size, channel, height, width}
+  torch::Tensor input_tensor = torch::rand({3, 1, 100, 100}).to(torch::kCUDA);  // {batch_size, channel, height, width}
 
-  while(ros::ok()) {
-    auto start = std::chrono::high_resolution_clock::now();
+  std::cout << input_tensor << std::endl;
+  
+  // while(ros::ok()) {
+  //   auto start = std::chrono::high_resolution_clock::now();
     
-    torch::Tensor output = module.forward({input_tensor}).toTensor();
+  //   torch::Tensor output = module.forward({input_tensor}).toTensor();
 
-    // std::cout << output << std::endl;
-    ///////////////////
+  //   std::cout << output << std::endl;
+  //   ///////////////////
 
-    // 시간을 측정할 코드 블록 끝
-    auto end = std::chrono::high_resolution_clock::now();
+  //   // 시간을 측정할 코드 블록 끝
+  //   auto end = std::chrono::high_resolution_clock::now();
 
-    // 측정된 시간 계산
-    std::chrono::duration<double> elapsed = end - start;
+  //   // 측정된 시간 계산
+  //   std::chrono::duration<double> elapsed = end - start;
 
-    // 결과 출력
-    std::cout << "실행 시간: " << elapsed.count() << "초" << std::endl;
-  }
+  //   // 결과 출력
+  //   std::cout << "실행 시간: " << elapsed.count() << "초" << std::endl;
+  // }
+  
   return 0;
 }

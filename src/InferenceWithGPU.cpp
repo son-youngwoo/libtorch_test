@@ -77,16 +77,22 @@
 //   return 0;
 // }
 
+//잘되는거
 #include <ros/ros.h>
 #include <iostream>
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <chrono>
 #include <opencv2/opencv.hpp>
+#include <fstream>
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "inference_gpu_node");
   ros::NodeHandle nh("~");
+
+  std::ofstream outputFile1("/home/orin/catkin_ws/src/libtorch_test/data/patch.txt");
+  std::ofstream outputFile2("/home/orin/catkin_ws/src/libtorch_test/data/patch_clone.txt");
+  std::ofstream outputFile3("/home/orin/catkin_ws/src/libtorch_test/data/model_output.txt");
 
   torch::jit::script::Module module;
 
@@ -105,37 +111,59 @@ int main(int argc, char** argv) {
 
   std::vector<torch::Tensor> patches;
 
-  cv::Mat patch(100, 100, CV_8U);
+  cv::Mat patch(100, 100, CV_32F);
+  // cv::Mat patch(100, 100, CV_8U);
   torch::ScalarType dtype;
   dtype = torch::kFloat32;
 
-  for (int i = 0; i < 10; i++) {
-    cv::randu(patch, cv::Scalar(0), cv::Scalar(256));  
-    torch::Tensor patch_t = torch::from_blob(patch.data, {100, 100, patch.channels()}, dtype);
-    patch_t = patch_t.permute({2, 0, 1}); // {100, 100, 1} -> {1, 100, 100}
+  for (int i = 0; i < 2500; i++) {
+    cv::randu(patch, cv::Scalar(255), cv::Scalar(255));
+    // std::cout << patch.type() << std::endl;
+    // outputFile1 << patch << std::endl;
+
+    cv::Mat _patch = patch.clone();
+
+    // _patch = _patch/255.0f;  
+    // outputFile2 << _patch << std::endl;
+
+    // std::cout << patch.type() << std::endl;
+
+    // std::cout << patch << std::endl;
+    // std::cout << patch << std::endl;
+    torch::Tensor patch_t = torch::from_blob(_patch.data, {1, 100, 100}, dtype);
+    patch_t = patch_t.div(255);
+    std::cout << _patch.channels() << std::endl;
+    // torch::Tensor patch_t = torch::from_blob(_patch.data, {100, 100, _patch.channels()}, dtype);
+    // std::cout << patch_t << std::endl;
+    // patch_t = patch_t.permute({2, 0, 1}); // {100, 100, 1} -> {1, 100, 100}
+    // std::cout << patch_t.sizes() << std::endl;
+
     patches.push_back(patch_t);
   }
-  
+  // std::cout << patches.size() << std::endl;
+
   torch::Tensor batch = torch::stack(patches);
   batch = batch.to(torch::kCUDA);
 
-  while(ros::ok()) {
-    auto start = std::chrono::high_resolution_clock::now();
+  // std::cout << batch << std::endl;
+
+  // while(ros::ok()) {
+    // auto start = std::chrono::high_resolution_clock::now();
     
     torch::Tensor output = module.forward({batch}).toTensor();
 
     // std::cout << output << std::endl;
-    ///////////////////
+    outputFile3 << output << std::endl;
+    // ///////////////////
 
-    // 시간을 측정할 코드 블록 끝
-    auto end = std::chrono::high_resolution_clock::now();
+    // // 시간을 측정할 코드 블록 끝
+    // auto end = std::chrono::high_resolution_clock::now();
 
-    // 측정된 시간 계산
-    std::chrono::duration<double> elapsed = end - start;
+    // // 측정된 시간 계산
+    // std::chrono::duration<double> elapsed = end - start;
 
-    // 결과 출력
-    std::cout << "실행 시간: " << elapsed.count() << "초" << std::endl;
-  }
+    // // 결과 출력
+    // std::cout << "실행 시간: " << elapsed.count() << "초" << std::endl;
+  // }
   return 0;
 }
-
